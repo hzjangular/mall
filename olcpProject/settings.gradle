@@ -1,0 +1,12 @@
+rootProject.name = 'ocProject'
+include ':ocCommon'
+include ':ocService'
+include ':ocPortal'
+include ':ocOperator'
+include ':ocWechat'
+
+project(':ocCommon').projectDir = "$rootDir/ocCommon" as File
+project(':ocService').projectDir = "$rootDir/ocService" as File
+project(':ocPortal').projectDir = "$rootDir/ocPortal" as File
+project(':ocOperator').projectDir = "$rootDir/ocOperator" as File
+project(':ocWechat').projectDir = "$rootDir/ocWechat" as File

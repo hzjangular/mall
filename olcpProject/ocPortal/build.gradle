@@ -1,0 +1,11 @@
+
+apply plugin: 'war'
+
+description = 'ocPortal Webapp'
+dependencies {
+  compile project(':ocCommon')
+  compile project(':ocService')
+    compile group: 'org.apache.poi', name: 'poi', version:'3.7'
+    compile group: 'org.apache.poi', name: 'poi-ooxml', version:'3.7'
+    compile group: 'org.apache.poi', name: 'poi-ooxml-schemas', version:'3.7'
+}

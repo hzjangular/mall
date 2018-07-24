@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Pursue_Knowledge Online Learning Cloud Platform.iml" filepath="$PROJECT_DIR$/.idea/modules/Pursue_Knowledge Online Learning Cloud Platform.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Pursue_Knowledge_Online_Learning_Cloud_Platform.iml" filepath="$PROJECT_DIR$/.idea/modules/Pursue_Knowledge_Online_Learning_Cloud_Platform.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Pursue_Knowledge_Online_Learning_Cloud_Platform_main.iml" filepath="$PROJECT_DIR$/.idea/modules/Pursue_Knowledge_Online_Learning_Cloud_Platform_main.iml" group="Pursue_Knowledge_Online_Learning_Cloud_Platform" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Pursue_Knowledge_Online_Learning_Cloud_Platform_test.iml" filepath="$PROJECT_DIR$/.idea/modules/Pursue_Knowledge_Online_Learning_Cloud_Platform_test.iml" group="Pursue_Knowledge_Online_Learning_Cloud_Platform" />
+    </modules>
+  </component>
+</project>

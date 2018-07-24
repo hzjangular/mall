@@ -1,0 +1,10 @@
+
+apply plugin: 'war'
+
+description = 'ocOperator Webapp'
+dependencies {
+    compile group: 'org.apache.poi', name: 'poi', version:'3.7'
+    compile group: 'org.apache.poi', name: 'poi-ooxml', version:'3.7'
+    compile group: 'org.apache.poi', name: 'poi-ooxml-schemas', version:'3.7'
+  compile project(':ocService')
+}

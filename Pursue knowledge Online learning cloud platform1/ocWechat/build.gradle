@@ -1,0 +1,7 @@
+
+apply plugin: 'war'
+
+description = 'ocWechat Webapp'
+dependencies {
+  compile project(':ocService')
+}

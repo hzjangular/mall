@@ -1,0 +1,523 @@
+package olcp.handler;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.time.FastDateFormat;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+import olcp.common.HttpClientUtils;
+import olcp.constant.SysConstant;
+/**
+ * 爬虫调度处理器
+ */
+@Component
+public class SpiderHandler {
+//    @Autowired
+//    private SpiderService spiderService;
+
+    private static final Logger logger = LoggerFactory.getLogger(SpiderHandler.class);
+    private static String HTTPS_PROTOCOL = "https:";
+    public void spiderData() {
+        logger.info("爬虫开始....");
+        Date startDate = new Date();
+        // 使用现线程池提交任务
+        ExecutorService executorService = Executors.newFixedThreadPool(4);
+        //引入countDownLatch进行线程同步，使主线程等待线程池的所有任务结束，便于计时
+        CountDownLatch countDownLatch = new CountDownLatch(100);
+        for(int i=1;i<=30;i++) {
+            String url = "https://www.imooc.com/course/list?page="+i;
+            String html = HttpClientUtils.sendGet1(url, null);
+            if (!StringUtils.isBlank(html)) {
+                Document document = Jsoup.parse(html);
+                Elements elements = document.select("div[class=clearfix]").select("div[class=course-card-container]");
+                List<String> cid = new ArrayList<>();
+                for (Element element : elements) {
+                    String id = element.select("a").attr("href");
+                    String temp[] = id.replaceAll("\\\\", "/").split("/");
+                    cid.add(temp[temp.length - 1]);
+                }
+                for (int j = 0; j < cid.size(); j++) {
+                    String hr = cid.get(j);
+                    executorService.submit(() -> {
+                        grib(hr);
+                        countDownLatch.countDown();
+                    });
+                }
+            }
+        }
+        try {
+            countDownLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        executorService.shutdown();
+        Date endDate = new Date();
+        FastDateFormat fdf = FastDateFormat.getInstance(SysConstant.DEFAULT_DATE_FORMAT);
+        logger.info("爬虫结束....");
+        logger.info("[开始时间:" + fdf.format(startDate) + ",结束时间:" + fdf.format(endDate) + ",耗时:"
+                + (endDate.getTime() - startDate.getTime()) + "ms]");
+
+    }
+
+    //存取数据
+    public static void store(String courseSummary,String coursetype , String courseTime,String courseDifficulty,String courseOverallRating,String courseStudyPeople,String courseName,String coursetailnum) {
+
+        String driverClassName = "com.mysql.jdbc.Driver";
+        String url = "jdbc:mysql://localhost:3306/online_learning_platform?useUnicode=true&characterEncoding=utf-8&useSSL=true&zeroDateTimeBehavior=convertToNull";
+        String username = "root";
+        String password = "19981028";
+        Connection conn = null;
+        // 加载驱动类
+        try {
+            Class.forName(driverClassName);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        try {
+            conn = DriverManager.getConnection(url, username, password);
+            // 创建sql语句模板
+            String sql = "INSERT into coursenew(courseSummary, coursetype , courseTime,courseDifficulty,courseOverallRating,courseStudyPeople,courseName,coursetailnum) VALUES(?,?,?,?,?,?,?,?)";
+            // 创建一个声明对象
+            PreparedStatement pst = conn.prepareStatement(sql);
+            // 用循环将数据添加到sql模板中
+            pst.setString(1, courseSummary);
+            pst.setString(2, coursetype);
+            pst.setString(3, courseTime);
+            pst.setString(4, courseDifficulty);
+            pst.setString(5, courseOverallRating);
+            pst.setString(6, courseStudyPeople);
+            pst.setString(7, courseName);
+            pst.setString(8, coursetailnum);
+            pst.addBatch();
+            // 将sql语句发送到mysql上
+            int[] res = pst.executeBatch();
+            System.out.println(res);
+            pst.close();
+            conn.close();
+        } catch (SQLException e) {
+           e.printStackTrace();
+        }
+    }
+
+    public static void store1(String courseSummary,String coursetype , String courseTime,String courseDifficulty,String courseOverallRating,String courseStudyPeople,String courseName,String coursetailnum) {
+
+        String driverClassName = "com.mysql.jdbc.Driver";
+        String url = "jdbc:mysql://localhost:3306/online_learning_platform?useUnicode=true&characterEncoding=utf-8&useSSL=true&zeroDateTimeBehavior=convertToNull";
+        String username = "root";
+        String password = "19981028";
+        Connection conn = null;
+        // 加载驱动类
+        try {
+            Class.forName(driverClassName);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        try {
+            conn = DriverManager.getConnection(url, username, password);
+            // 创建sql语句模板
+            String sql = "INSERT into coursehot(courseSummary, coursetype , courseTime,courseDifficulty,courseOverallRating,courseStudyPeople,courseName,coursetailnum) VALUES(?,?,?,?,?,?,?,?)";
+            // 创建一个声明对象
+            PreparedStatement pst = conn.prepareStatement(sql);
+            // 用循环将数据添加到sql模板中
+            pst.setString(1, courseSummary);
+            pst.setString(2, coursetype);
+            pst.setString(3, courseTime);
+            pst.setString(4, courseDifficulty);
+            pst.setString(5, courseOverallRating);
+            pst.setString(6, courseStudyPeople);
+            pst.setString(7, courseName);
+            pst.setString(8, coursetailnum);
+            pst.addBatch();
+            // 将sql语句发送到mysql上
+            int[] res = pst.executeBatch();
+            System.out.println(res);
+            pst.close();
+            conn.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void grib(String id)
+    {
+        String curl="https://www.imooc.com/learn/"+id;
+        String html = HttpClientUtils.sendGet1(curl,null);
+        Document document = Jsoup.parse(html);
+        String courseSummary=document.select("div[class=course-description course-wrap]").text();
+        String coursetype=document.select("div[class=path]").select("a").text();
+        String temp[]=document.select("div[class=static-item l]").select("span[class=meta-value]").text().split(" ");
+        String courseTime=temp[1];
+        String courseDifficulty=temp[0];
+        String courseOverallRating=document.select("div[class=static-item l score-btn]").select("span[class=meta-value]").text().split(" ")[0];
+        String courseStudyPeople=null;
+        String courseName=document.select("div[class=hd clearfix]").select("h2[class=l]").text();
+        String regexStr = "<span class=\"meta-value js-learn-num\"><.*?></span>";
+        //获取Pattern对象
+        Pattern pattern = Pattern.compile(regexStr);
+        // 定义一个matcher用来做匹配
+        Matcher matcher = pattern.matcher(html);
+        if (matcher.find()) {
+            courseStudyPeople=matcher.group();
+        }
+        //System.out.println(courseStudyPeople);
+        //store(courseSummary,coursetype , courseTime,courseDifficulty,courseOverallRating,courseStudyPeople,courseName,id);
+        store1(courseSummary,coursetype , courseTime,courseDifficulty,courseOverallRating,courseStudyPeople,courseName,id);
+    }
+
+    public void spiderData1() {
+        logger.info("爬虫开始....");
+        Date startDate = new Date();
+        // 使用现线程池提交任务
+        ExecutorService executorService = Executors.newFixedThreadPool(4);
+        //引入countDownLatch进行线程同步，使主线程等待线程池的所有任务结束，便于计时
+        CountDownLatch countDownLatch = new CountDownLatch(100);
+        for(int i=1;i<=30;i++) {
+            String url = "https://www.imooc.com/course/list?sort=pop&page="+i;
+            String html = HttpClientUtils.sendGet1(url, null);
+            if (!StringUtils.isBlank(html)) {
+                Document document = Jsoup.parse(html);
+                Elements elements = document.select("div[class=clearfix]").select("div[class=course-card-container]");
+                List<String> cid = new ArrayList<>();
+                for (Element element : elements) {
+                    String id = element.select("a").attr("href");
+                    String temp[] = id.replaceAll("\\\\", "/").split("/");
+                    cid.add(temp[temp.length - 1]);
+                }
+                for (int j = 0; j < cid.size(); j++) {
+                    String hr = cid.get(j);
+                    executorService.submit(() -> {
+                        grib(hr);
+                        countDownLatch.countDown();
+                    });
+                }
+            }
+        }
+        try {
+            countDownLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        executorService.shutdown();
+        Date endDate = new Date();
+        FastDateFormat fdf = FastDateFormat.getInstance(SysConstant.DEFAULT_DATE_FORMAT);
+        logger.info("爬虫结束....");
+        logger.info("[开始时间:" + fdf.format(startDate) + ",结束时间:" + fdf.format(endDate) + ",耗时:"
+                + (endDate.getTime() - startDate.getTime()) + "ms]");
+
+    }
+
+}
+
+
+
+
+package priv.jesse.mall.common;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import priv.jesse.mall.constant.SysConstant;
+
+/**
+ * HttpClient工具类
+ */
+public class HttpClientUtils {
+
+    private final static Logger logger = LoggerFactory.getLogger(HttpClientUtils.class);
+
+    private final static String GET_METHOD = "GET";
+    private final static String POST_METHOD = "POST";
+
+    /**
+     * GET请求
+     *
+     * @param url
+     *            请求url
+     * @param headers
+     *            头部
+     * @param params
+     *            参数
+     * @return
+     */
+    public static String sendGet(String url, Map<String, String> headers, Map<String, String> params) {
+        // 创建HttpClient对象
+        CloseableHttpClient client = HttpClients.createDefault();
+        StringBuilder reqUrl = new StringBuilder(url);
+        String result = "";
+        /*
+         * 设置param参数
+         */
+        if (params != null && params.size() > 0) {
+            reqUrl.append("?");
+            for (Entry<String, String> param : params.entrySet()) {
+                reqUrl.append(param.getKey() + "=" + param.getValue() + "&");
+            }
+            url = reqUrl.subSequence(0, reqUrl.length() - 1).toString();
+        }
+        logger.debug("[url:" + url + ",method:" + GET_METHOD + "]");
+        HttpGet httpGet = new HttpGet(url);
+        /**
+         * 设置头部
+         */
+        logger.debug("Header\n");
+        if (headers != null && headers.size() > 0) {
+            for (Entry<String, String> header : headers.entrySet()) {
+                httpGet.addHeader(header.getKey(), header.getValue());
+                logger.debug(header.getKey() + " : " + header.getValue());
+            }
+        }
+        CloseableHttpResponse response = null;
+        try {
+            response = client.execute(httpGet);
+            /**
+             * 请求成功
+             */
+            if (response.getStatusLine().getStatusCode() == 200) {
+                HttpEntity entity = response.getEntity();
+                result = EntityUtils.toString(entity, SysConstant.DEFAULT_CHARSET);
+            }
+        } catch (IOException e) {
+            logger.error("网络请求出错，请检查原因");
+        } finally {
+            // 关闭资源
+            try {
+                if (response != null) {
+                    response.close();
+                }
+                client.close();
+            } catch (IOException e) {
+                logger.error("网络关闭错误错，请检查原因");
+            }
+        }
+        return result;
+    }
+    /**
+     * POST请求
+     *
+     * @param url
+     *            请求url
+     * @param headers
+     *            头部
+     * @param params
+     *            参数
+     * @return
+     */
+    public static String sendPost(String url, Map<String, String> headers, Map<String, String> params) {
+        CloseableHttpClient client = HttpClients.createDefault();
+        String result = "";
+        HttpPost httpPost = new HttpPost(url);
+        /**
+         * 设置参数
+         */
+        if (params != null && params.size() > 0) {
+            List<NameValuePair> paramList = new ArrayList<>();
+            for (Entry<String, String> param : params.entrySet()) {
+                paramList.add(new BasicNameValuePair(param.getKey(), param.getValue()));
+            }
+            logger.debug("[url: " + url + ",method: " + POST_METHOD + "]");
+            // 模拟表单提交
+            try {
+                UrlEncodedFormEntity entity = new UrlEncodedFormEntity(paramList, SysConstant.DEFAULT_CHARSET);
+                httpPost.setEntity(entity);
+            } catch (UnsupportedEncodingException e) {
+                logger.error("不支持的编码");
+            }
+            /**
+             * 设置头部
+             */
+            if (headers != null && headers.size() > 0) {
+                logger.debug("Header\n");
+                if (headers != null && headers.size() > 0) {
+                    for (Entry<String, String> header : headers.entrySet()) {
+                        httpPost.addHeader(header.getKey(), header.getValue());
+                        logger.debug(header.getKey() + " : " + header.getValue());
+                    }
+                }
+            }
+            CloseableHttpResponse response = null;
+            try {
+                response = client.execute(httpPost);
+                HttpEntity entity = response.getEntity();
+                result = EntityUtils.toString(entity, SysConstant.DEFAULT_CHARSET);
+            } catch (IOException e) {
+                logger.error("网络请求出错，请检查原因");
+            } finally {
+                try {
+                    if (response != null) {
+                        response.close();
+                    }
+                    client.close();
+                } catch (IOException e) {
+                    logger.error("网络关闭错误");
+                }
+            }
+        }
+        return result;
+    }
+    /**
+     * post请求发送json
+     * @param url
+     * @param json
+     * @param headers
+     * @return
+     */
+    public static String senPostJson(String url, String json, Map<String, String> headers) {
+        CloseableHttpClient client = HttpClients.createDefault();
+        String result = "";
+        HttpPost httpPost = new HttpPost(url);
+        StringEntity stringEntity = new StringEntity(json, ContentType.APPLICATION_JSON);
+        httpPost.setEntity(stringEntity);
+        logger.debug("[url: " + url + ",method: " + POST_METHOD + ", json: " + json + "]");
+        /**
+         * 设置头部
+         */
+        if (headers != null && headers.size() > 0) {
+            logger.debug("Header\n");
+            if (headers != null && headers.size() > 0) {
+                for (Entry<String, String> header : headers.entrySet()) {
+                    httpPost.addHeader(header.getKey(), header.getValue());
+                    logger.debug(header.getKey() + " : " + header.getValue());
+                }
+            }
+        }
+        CloseableHttpResponse response = null;
+        try {
+            response = client.execute(httpPost);
+            HttpEntity entity = response.getEntity();
+            result = EntityUtils.toString(entity, SysConstant.DEFAULT_CHARSET);
+        } catch (IOException e) {
+            logger.error("网络请求出错，请检查原因");
+        } finally {
+            try {
+                if (response != null) {
+                    response.close();
+                }
+                client.close();
+            } catch (IOException e) {
+                logger.error("网络关闭错误");
+            }
+        }
+        return result;
+    }
+
+    public static String sendGet1(String url,Map<String, String> headers) {
+        // 创建HttpClient对象
+        CloseableHttpClient client = HttpClients.createDefault();
+        StringBuilder reqUrl = new StringBuilder(url);
+        String result = "";
+        HttpGet httpGet = new HttpGet(url);
+        /**
+         * 设置头部
+         */
+        logger.debug("Header\n");
+        if (headers != null && headers.size() > 0) {
+            for (Entry<String, String> header : headers.entrySet()) {
+                httpGet.addHeader(header.getKey(), header.getValue());
+                logger.debug(header.getKey() + " : " + header.getValue());
+            }
+        }
+        CloseableHttpResponse response = null;
+        try {
+            response = client.execute(httpGet);
+            /**
+             * 请求成功
+             */
+            if (response.getStatusLine().getStatusCode() == 200) {
+                HttpEntity entity = response.getEntity();
+                result = EntityUtils.toString(entity, SysConstant.DEFAULT_CHARSET);
+            }
+        } catch (IOException e) {
+            logger.error("网络请求出错，请检查原因");
+        } finally {
+            // 关闭资源
+            try {
+                if (response != null) {
+                    response.close();
+                }
+                client.close();
+            } catch (IOException e) {
+                logger.error("网络关闭错误错，请检查原因");
+            }
+        }
+        return result;
+    }
+
+}
+
+
+package priv.jesse.mall;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.web.servlet.ServletComponentScan;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
+import priv.jesse.mall.handler.SpiderHandler;
+
+import javax.annotation.PostConstruct;
+
+
+/**
+ * 程序启动入口
+ *
+ * @ServletComponentScan 设置启动时spring能够扫描到我们自己编写的servlet和filter, 用于Druid监控
+ * @MapperScan("com.imlaidian.springbootdemo.dao") 扫描mybatis Mapper接口
+ * @EnableScheduling 启用定时任务
+ * @EnableTransactionManagement 开启事务
+ *
+ * @author LJQ
+ */
+@ServletComponentScan
+@EnableConfigurationProperties
+@EnableTransactionManagement
+@SpringBootApplication
+public class MallApplication {
+	@Autowired
+	private SpiderHandler spiderHandler;
+	public static void main(String[] args) {
+
+		SpringApplication.run(MallApplication.class, args);
+	}
+	@PostConstruct
+	public void task() {
+		//spiderHandler.spiderData();
+        spiderHandler.spiderData1();
+	}
+}
+

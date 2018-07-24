@@ -1,0 +1,5 @@
+
+description = 'ocService'
+dependencies {
+  compile project(':ocCommon')
+}
