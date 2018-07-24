@@ -28,6 +28,9 @@ public class Course1Controller {
     private coursehotService courseService3;
     @Autowired
     private courseclassificationService courseclassificationservice;
+
+
+
     /**
      *　最新课程
      */
